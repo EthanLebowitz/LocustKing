@@ -102,10 +102,10 @@ class Locust extends Boid{
      * Decreases boid life if tile boid is on is dead.
      **/
     
-    public void	update(double time, Tile[][] map, ArrayList<Locust> boids, Boid kingBoid){
+    public void	update(double time, Chunk chunk, ArrayList<Locust> boids, Boid kingBoid){
 	flock(boids, kingBoid);
 	position = position.add(velocity.times(time));
-	Tile tile = getTile(map);
+	Tile tile = getTile(chunk);
 		reduceTileLife(tile);
         updateBoidLife(tile);
     }// update ()
@@ -318,7 +318,7 @@ class KingBoid extends Boid{
 		spriteLocation = "sprites/king_crown_small.png";
 		Image image = loadImage();
 		boidWidth = image.getWidth(null);
-                boidHeight = image.getHeight(null);
+        boidHeight = image.getHeight(null);
 	}// KingBoid constructor
         //=======================================================================
 
@@ -328,14 +328,14 @@ class KingBoid extends Boid{
      * method update() changes position based on velocity, slows down boid over mountains
      * calls contain() to keep boid within world bounds.
      **/
-     public void update(double time, Tile[][] map, Pair Target){
-	    if(getTile(world.map).isMountain){
+     public void update(double time, Chunk chunk, Pair Target){
+	    if(getTile(chunk).isMountain){
 		 	position = position.add(velocity.times(time/2.5));
 		}
 		 else{
 		 	position = position.add(velocity.times(time));
 		 }
-		contain();
+		//contain();
      }// update ()
      //=======================================================================
 
@@ -352,7 +352,32 @@ class KingBoid extends Boid{
     } //follow ()
     //=======================================================================
 
+    //===================================================================
+    /**
+     * method getTile() returns the tile on the tile map that a boid is occupying
+     **/
+    @Override
+    public Tile getTile(Chunk currentChunk){
+        double tileHeight = Tile.height;
+        double tileWidth = Tile.width;
+        
+        Pair positionByTiles = new Pair((int)Math.floor((position.x) / tileWidth), (int)Math.floor((position.y) / tileHeight));
+        
+        int[] chunkIndex = {(int)Math.floor(positionByTiles.x / Chunk.chunkWidth), (int)Math.floor(positionByTiles.y / Chunk.chunkHeight)};
+        Tile[][] map = world.chunks.get(world.convertMapIndexToKey(chunkIndex)).map;
+        
+        int tilePosX = (int)positionByTiles.x % Chunk.chunkWidth;//boid's position x in tile map
+        int tilePosY = (int)positionByTiles.y % Chunk.chunkHeight;//boid's position x in tile map
+        if(tilePosX < 0){tilePosX = tilePosX + Chunk.chunkWidth;} //mod keeps negatives negative
+        if(tilePosY < 0){tilePosY = tilePosY + Chunk.chunkHeight;}
 
+        if(tilePosX < map[0].length && tilePosX >= 0 && tilePosY < map.length && tilePosY >= 0){
+            return map[tilePosY][tilePosX]; 
+        }
+        else{return map[0][0];}
+    } //getTile ()
+    //===================================================================
+    
     //=======================================================================
     /**
      * method getKingPos() returns the pair representing a kingboid's position
@@ -399,8 +424,8 @@ class KingBoid extends Boid{
 	public void contain(){
 		double x = this.position.x;
 		double y = this.position.y;
-		double worldWidth = world.worldDimensions.x * Tile.width;
-		double worldHeight = world.worldDimensions.y * Tile.height;
+		double worldWidth = world.mapDimensions.x * Tile.width;
+		double worldHeight = world.mapDimensions.y * Tile.height;
 		if(x > worldWidth){this.position.x = worldWidth;}
 		if(x < 0){this.position.x = 0;}
 		if(y > worldHeight){this.position.y = worldHeight;}
@@ -485,11 +510,19 @@ public class Boid{
     /**
      * method getTile() returns the tile on the tile map that a boid is occupying
      **/
-    public Tile getTile(Tile[][] map){
+    public Tile getTile(Chunk currentChunk){
 		double tileHeight = Tile.height;
 		double tileWidth = Tile.width;
-		int tilePosX = (int)Math.floor((position.x+(0.5*boidWidth)) / tileWidth);//boid's position x in tile map
-		int tilePosY = (int)Math.floor((position.y+(0.5*boidHeight)) / tileHeight);//boid's position x in tile map
+        
+        Pair positionByTiles = new Pair((int)Math.floor((position.x+(0.5*boidWidth)) / tileWidth), (int)Math.floor((position.y+(0.5*boidHeight)) / tileHeight));
+        
+        int[] chunkIndex = {(int)Math.floor(positionByTiles.x / Chunk.chunkWidth), (int)Math.floor(positionByTiles.y / Chunk.chunkHeight)};
+        Tile[][] map = world.chunks.get(world.convertMapIndexToKey(chunkIndex)).map;
+        
+		int tilePosX = (int)positionByTiles.x % Chunk.chunkWidth;//boid's position x in tile map
+		int tilePosY = (int)positionByTiles.y % Chunk.chunkHeight;//boid's position x in tile map
+        if(tilePosX < 0){tilePosX = tilePosX + Chunk.chunkWidth;} //mod keeps negatives negative
+        if(tilePosY < 0){tilePosY = tilePosY + Chunk.chunkHeight;}
     
 		if(tilePosX < map[0].length && tilePosX >= 0 && tilePosY < map.length && tilePosY >= 0){
 			return map[tilePosY][tilePosX]; 

@@ -262,9 +262,9 @@ public class Main extends JPanel implements MouseMotionListener, KeyListener{
 
 		//draws strings representing % alive tiles, % dead tiles, & # locusts in current swarm
 		g.setColor(Color.BLACK);
-		int percentAlive = world.getPercentAlive();
-		g.drawString(String.valueOf(percentAlive)+"%", (int)position.x + 80, (int)position.y + 45); // % alive
-		g.drawString(String.valueOf(100-percentAlive)+"%", (int)position.x + 80, (int)position.y + 105); // % dead
+		//int percentAlive = world.getPercentAlive();
+		//g.drawString(String.valueOf(percentAlive)+"%", (int)position.x + 80, (int)position.y + 45); // % alive
+		//g.drawString(String.valueOf(100-percentAlive)+"%", (int)position.x + 80, (int)position.y + 105); // % dead
 		g.drawString(String.valueOf(world.numBoids), (int)position.x + 80, (int)position.y + 165); // % dead
         
         if(player.playing){

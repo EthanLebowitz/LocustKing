@@ -17,6 +17,8 @@ import java.awt.Graphics;
 import java.awt.Color;
 
 import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.awt.RenderingHints; 
 import java.awt.event.KeyEvent;
 import javax.swing.ImageIcon;
 
@@ -32,8 +34,8 @@ import javax.swing.Timer;
 //***** Tile subclass. Mountains start off & remain dead. They slow leader boid movement. *****//
 class MountainTile extends Tile{
 	
-	public MountainTile(double x, double y, double l, World w){ 
-		super(x, y, l, w);
+	public MountainTile(double x, double y, double l, World w, int[] mapIndex){ 
+		super(x, y, l, w, mapIndex);
 		spriteLocation = "sprites/mtn.png";
 		isMountain = true;
 	}
@@ -44,19 +46,22 @@ class MountainTile extends Tile{
 //***** Tile class *****//
 class Tile{
     Pair position; //position x and y in 2d array of world.map
-    public static double height; //static so we can access it from boid without a tile instance
-    public static double width;
+    int[] mapIndex; //key for tile's parent map in dict of maps
+    public static int height; //static so we can access it from boid without a tile instance
+    public static int width;
     double life; //life to be reduced by locusts
     boolean alive; 
 	World world;
 	String spriteLocation; //image location
 	boolean isMountain = false;
 
-    public Tile(double x, double y, double l, World w){
+    public Tile(double x, double y, double l, World w, int[] mapIndex){
+		this.world = w;
 		this.position = new Pair(x, y);
+        this.mapIndex = mapIndex;
 	
-		height = 300.0;
-		width = 300.0;
+		height = 150;
+		width = 150;
 		life = l;
 		spriteLocation = "sprites/live4.png";
 		if(l>0){ 
@@ -67,8 +72,6 @@ class Tile{
 			alive = false;
 			updateSprite();
 		}
-		
-		world = w;
 		
 	}
     //***** Tiles display different sprites as life level changes. Greener sprites are more alive, yellower ones more dead. Dead tiles are brown/yellow.*****//
@@ -95,8 +98,8 @@ class Tile{
         ImageIcon ii = new ImageIcon(spriteLocation);
         Image image = ii.getImage(); 
         
-        width = image.getWidth(null);
-        height = image.getHeight(null);
+        //width = image.getWidth(null);
+        //height = image.getHeight(null);
 		return image;
     }
 	/////////////////////////////////////////////////////////////////////////////////////////
@@ -113,6 +116,7 @@ class Tile{
 			spriteLocation = "sprites/dead2.png";
 		}
 		int boidNum = r.nextInt(3);
+        //if(world==null){System.out.println("yup");}
 		for(int i = 0; i < boidNum; i++){ //spawns 0-2 boids at a random position near the king
 		    world.boids.add(new Locust((r.nextDouble()-.5)*400 + world.kingBoid.position.x, (r.nextDouble()-.5)*400 + world.kingBoid.position.y, world));
 		}
@@ -121,19 +125,23 @@ class Tile{
     //***** Draws tiles that are visible, based on isInView(), relative to viewing window *****//
 	public void draw(Graphics g, Pair displayCenter, Main mainInstance){ //draws the tile if isInView
 		if(isInView(displayCenter)){
-			Pair coords = new Pair(position.x*Tile.width, position.y*Tile.height);
+            int truePositionX = (int)position.x + ((int)Chunk.chunkWidth * (int)this.mapIndex[0]);
+            int truePositionY = (int)position.y + ((int)Chunk.chunkHeight * (int)this.mapIndex[1]);
+			Pair coords = new Pair(truePositionX*Tile.width, truePositionY*Tile.height);
 			Pair displayCoords = World.toDisplayCoords(coords, displayCenter);
 			Graphics2D g2d = (Graphics2D) g;
     
-    		g2d.drawImage(loadImage(), (int)displayCoords.x, (int)displayCoords.y, mainInstance);
+    		g2d.drawImage(loadImage(), (int)displayCoords.x, (int)displayCoords.y, width, height, mainInstance);
 		}	
 	}
     
     //***** Checks which tiles should be visible based on position of the leader (i.e., displayCenter)*****//
 	public boolean isInView(Pair displayCenter){ //checks if the tile is in the region displayed
 	    int offscreenTiles = 3; //number of offscreen tiles to display to avoid rendering jitters around edges
-		double tileCoordX = (position.x * Tile.width);
-	    double tileCoordY = (position.y * Tile.height); //these are coords of the top left corner 
+        int truePositionX = (int)position.x + ((int)Chunk.chunkWidth * (int)this.mapIndex[0]);
+        int truePositionY = (int)position.y + ((int)Chunk.chunkHeight * (int)this.mapIndex[1]);
+		double tileCoordX = (truePositionX * Tile.width);
+	    double tileCoordY = (truePositionY * Tile.height); //these are coords of the top left corner 
 		Pair displayXBounds = new Pair(displayCenter.x-((Main.WIDTH/2)+(offscreenTiles*Tile.width)), displayCenter.x+((Main.WIDTH/2)+(offscreenTiles*Tile.width))); //left and right bounds respectively
 		Pair displayYBounds = new Pair(displayCenter.y-((Main.HEIGHT/2)+(offscreenTiles*Tile.height)), displayCenter.y+((Main.HEIGHT/2)+(offscreenTiles*Tile.height))); //top and bottom bounds respectively
 		if(tileCoordX > displayXBounds.x  && tileCoordX < displayXBounds.y ){

@@ -13,6 +13,8 @@
 // IMPORTS
 import java.awt.Graphics;
 import java.util.ArrayList;
+import java.util.HashMap;
+//import java.util.Hashtable;
 import java.util.Random;
 import java.awt.event.MouseListener;//so we can listen to the mouse
 import java.awt.event.MouseEvent;
@@ -34,15 +36,17 @@ class World{
      *@param kingBoid contains the instance of KingBoid
      *@param map 2D array of the tiles
      **/
-    Pair worldDimensions;
+    Pair mapDimensions;
 	Main mainInstance;
+    MapGenerator mapGenerator;
     
 	int initNumBoids = 1; //starting number of locusts to be generated
 	int numBoids = 0; //keeps track of how many locusts there are
 	public ArrayList<Locust> boids = new ArrayList<Locust>(); //ArrayList containing alll the locusts
     
 	KingBoid kingBoid = new KingBoid(2000,2000,this); 
-	public Tile[][] map; // 2D array will contain all the tiles. Their positions in the array represent their positions in the game
+    public HashMap<String, Chunk> chunks;
+	//public Tile[][] map; // 2D array will contain all the tiles. Their positions in the array represent their positions in the game
 	//=======================================================================
 
 	
@@ -52,8 +56,12 @@ class World{
 	 * creates the initial number of locusts near the king
      **/
     public World(Pair worldDimensions, Main mainInstance){
-		this.worldDimensions = worldDimensions;
-		map = generateMap(worldDimensions.x, worldDimensions.y);
+		this.mapDimensions = new Pair(Chunk.chunkWidth, Chunk.chunkHeight);
+        //maps = new Hashtable<String,Tile[][]>();
+        chunks = new HashMap<>();
+        int[] origin = {0,0};
+        Chunk firstChunk = new Chunk(origin, this);
+        chunks.put(convertMapIndexToKey(origin), firstChunk);
 		this.mainInstance = mainInstance;
 		Random r = new Random();
 		for(int i = 0; i < initNumBoids; i++){ //create boids near the king
@@ -68,7 +76,7 @@ class World{
 	/**
 	*Returns the percent of tiles left alive. Calls win() in Main if none are left.
 	**/
-	public int getPercentAlive(){ 
+	/* public int getPercentAlive(){ 
 		int alive = 0;
 		int dead = 0;
 		for(int i = 0; i < map.length; i++){ //iterates through all tiles
@@ -85,10 +93,42 @@ class World{
 		int percentInt = (int)percent;
 		if(alive == 0){mainInstance.win();} //if there are none alive win
 		return percentInt;
-	} //getPercentAlive()
+	} //getPercentAlive() */
 	//=======================================================================
 
-	
+	public String convertMapIndexToKey(int[] index){
+        String key = Integer.toString(index[0]) + ":" + Integer.toString(index[1]);
+        return key;
+    }
+    
+     public String checkForEdge(Chunk chunk){ //
+        
+        Tile currentTile = kingBoid.getTile(chunk);
+        Pair tilePosition = currentTile.position;
+        String edgesString = "";
+        
+        int displayWidthInTiles = mainInstance.WIDTH / Tile.width;
+        int displayHeightInTiles = mainInstance.HEIGHT / Tile.height;
+        
+        if(tilePosition.x < displayWidthInTiles){edgesString = edgesString + "L";}
+        if(tilePosition.x > (this.mapDimensions.x - displayWidthInTiles)){edgesString = edgesString + "R";}
+        if(tilePosition.y < displayHeightInTiles){edgesString = edgesString + "T";}
+        if(tilePosition.y > (this.mapDimensions.y - displayHeightInTiles)){edgesString = edgesString + "B";}
+        
+        return edgesString;
+        
+    } 
+    
+    public Chunk getCurrentChunk(){
+        
+        Pair positionByTiles = new Pair(kingBoid.position.x/Tile.width, kingBoid.position.y/Tile.height);
+        int[] mapIndex = {(int)Math.floor(positionByTiles.x/this.mapDimensions.x), (int)Math.floor(positionByTiles.y/this.mapDimensions.y)};
+        Chunk currentChunk = this.chunks.get(convertMapIndexToKey(mapIndex));
+        currentChunk.initializeAdjacentChunks();
+        return currentChunk;
+        
+    }
+    
 	//=======================================================================
 	/**
 	*Calling the draw functions of all the Boids and Tiles.
@@ -103,107 +143,79 @@ class World{
     }
 	
 	public void drawTiles(Graphics g, Main mainInstance){  //iterates through all the tiles and calls their draw functions.
-		for(int i = 0; i < map.length; i++){
-			for(int j = 0; j < map[0].length; j++){
-				map[i][j].draw(g, kingBoid.position, mainInstance);
-			}
-		}
+    
+        /* String nearEdges = checkForEdge();
+        if(! nearEdges.equals("")){ //if we are near an edge
+            generateAdjacentMaps(nearEdges);
+        } */
+        
+        //but first find which map(s) we're in
+        Chunk currentChunk = getCurrentChunk();
+        System.out.println(convertMapIndexToKey(currentChunk.position));
+        ArrayList<Chunk> chunksInView = new ArrayList<>();
+        chunksInView.add(currentChunk);
+        System.out.println(kingBoid.getTile(currentChunk).position.y);
+        String nearEdges = checkForEdge(currentChunk);
+        System.out.println(nearEdges);
+        if(nearEdges.contains("T")){
+            chunksInView.add(currentChunk.chunkUp);
+        }if(nearEdges.contains("L")){
+            chunksInView.add(currentChunk.chunkLeft);
+        }if(nearEdges.contains("R")){
+            chunksInView.add(currentChunk.chunkRight);
+        }if(nearEdges.contains("B")){
+            chunksInView.add(currentChunk.chunkDown);
+        }if(nearEdges.equals("RT")){
+            chunksInView.add(currentChunk.chunkUpperRight);
+        }if(nearEdges.equals("RB")){
+            chunksInView.add(currentChunk.chunkLowerRight);
+        }if(nearEdges.equals("LT")){
+            chunksInView.add(currentChunk.chunkUpperLeft);
+        }if(nearEdges.equals("LB")){
+            chunksInView.add(currentChunk.chunkLowerLeft);
+        }
+        
+        for(var c = 0; c<chunksInView.size(); c++){
+            Tile[][] map = chunksInView.get(c).map;
+            for(int i = 0; i < map.length; i++){
+                for(int j = 0; j < map[0].length; j++){
+                    map[i][j].draw(g, kingBoid.position, mainInstance);
+                }
+            }
+        }
 	}
 	//=======================================================================
 	
+    /* public Pair[] getMaps(kingBoid.position){
+        
+        int offscreenTiles = 3; //number of offscreen tiles to display to avoid rendering jitters around edges
+		double tilesWide = (this.mainInstance.WIDTH / Tile.width);
+	    double tilesHigh = (this.mainInstance.HEIGHT / Tile.height);
+		Pair displayXBounds = new Pair(displayCenter.x-((Main.WIDTH/2)+(offscreenTiles*Tile.width)), displayCenter.x+((Main.WIDTH/2)+(offscreenTiles*Tile.width))); //left and right bounds respectively
+		Pair displayYBounds = new Pair(displayCenter.y-((Main.HEIGHT/2)+(offscreenTiles*Tile.height)), displayCenter.y+((Main.HEIGHT/2)+(offscreenTiles*Tile.height))); //top and bottom bounds respectively
+		if(tileCoordX > displayXBounds.x  && tileCoordX < displayXBounds.y ){
+			if(tileCoordY > displayYBounds.x && tileCoordY < displayYBounds.y ){
+				return true;
+			}
+		}
+		return false; //tiles over 3 tile spaces out of bounds are not drawn to preserve framerate
+        
+    } */
 
 	//=======================================================================
 	/**
 	*Calling the update functions of all the Boids.
 	**/
     public void updateBoids(double time){ //calls every boid's update() method. If there aren't any locusts left calls the lose() method of Main. 
-		kingBoid.update(time, map, mainInstance.mousePosition);//here's where we call the mouse listener from the main method
+        Chunk currentChunk = getCurrentChunk();
+		kingBoid.update(time, currentChunk, mainInstance.mousePosition);//here's where we call the mouse listener from the main method
 		for (int i = 0; i < numBoids; i ++){
-		    boids.get(i).update(time, map, boids, kingBoid);
+		    boids.get(i).update(time, currentChunk, boids, kingBoid);
 		}
 		if(this.numBoids == 0){
 			mainInstance.lose();
 		}
 	}
-	//=======================================================================
-	
-	
-	//=======================================================================
-	/**
-	* Generating the map. Starts by seeding it randomly with a mountain or live tile here and there,
-	* then fills in the gaps. Sets borders as mountains.
-	**/
-    public Tile[][] generateMap(double x, double y){ //generates map of tiles and puts them in the map 2d array
-		
-		map = new Tile[(int)x][(int)y]; //set map dimensions
-		Random r = new Random();//randomize tile life levels with r.nextDouble()*100
-		
-		int[][] seededMap = generateSeedMap(x, y); //generates seeded map
-		
-		for(int i = 0; i < map.length; i++){//fill gaps
-			for(int j = 0; j < map[0].length; j++){
-				Pair tilePos = new Pair(j, i);
-				double[] distances = getSeedDistances(seededMap, tilePos);
-				if(distances[0]<distances[1]){map[i][j] = new MountainTile(j, i, 0, this);} //if closer to a mountain than a live tile set as mountain
-				else{map[i][j] = new Tile(j, i, r.nextDouble()*100+.1, this);} //otherwise set as a live tile with random life.
-			}
-		}
-		
-		
-		for(int i = 0; i < map.length; i++){
-			for(int j = 0; j < map[0].length; j++){
-				if(i == 0||i == map.length-1|| j == 0||j == map[0].length-1){
-					  map[i][j] = new MountainTile(j, i, 0, this);//put mountains at edges
-				}
-			}
-		}
-		
-		return map;
-	    
-	} //generateMap()
-	
-	public int[][] generateSeedMap(double x, double y){ //creates a 2d array of ints representing mountain seeds, live seeds, and undefined tiles
-		Random r = new Random();//generate seeds
-		
-		int[][] seededMap = new int[(int)x][(int)y];
-		double mountainOdds = 0.1; 
-		double aliveOdds = 0.2;
-		
-		for(int i = 0; i < seededMap.length; i++){ //generate seeds
-			for(int j = 0; j < seededMap[i].length; j++){
-				double rand = r.nextDouble();
-				if(rand < mountainOdds){seededMap[i][j] = 0;} //0=mountains   these are also the indexes for distance from that biome later
-				else if(rand>mountainOdds && rand<mountainOdds+aliveOdds){seededMap[i][j] = 1;}//1=alive
-				else{seededMap[i][j] = 2;}//2=none
-			}
-		}
-		
-		return seededMap;
-	} //generateSeedMap()
-	
-	public double[] getSeedDistances(int[][] seededMap, Pair position){ //gets smallest distance of position to mountain and alive seeds
-		
-		double[] distances = new double[2]; // index 0 = mtn distance index 1 = alive distance
-		distances[0]=100000;
-		distances[1]=100000; //start em real high or else if there isn't a single seed of 1 type it will always be registered as 0 distance. That would be bad.
-		for(int i = 0; i < seededMap.length; i++){ 
-			for(int j = 0; j < seededMap[i].length; j++){
-				if(!(seededMap[i][j] == 2)){//if the tile is a seed and not nothing
-					double distance = Math.sqrt(Math.pow((position.x - j),2) + Math.pow((position.y - i),2));
-					if(distance==0.0){//if tile is on a seed make it that seed
-						distances[seededMap[i][j]] = 0.0;
-						distances[(seededMap[i][j]+1)%2] = 100000.0; //set the other tile type distance to an absurdly high number so it won't become that
-						return distances;
-					}
-					else if(distances[seededMap[i][j]] == 0.0 || distances[seededMap[i][j]] > distance){
-						distances[seededMap[i][j]] = distance;
-					}
-				}
-			}
-		}
-		return distances;
-		
-	} //getSeedDistances
 	//=======================================================================
 	
 	
