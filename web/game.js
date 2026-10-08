@@ -5,6 +5,7 @@
 const WIDTH = 1024, HEIGHT = 768, FPS = 60;
 const TILE = 300;               // tile sprites are 300x300
 const WORLD_DIM = 100;          // world is 100x100 tiles
+const ZOOM = 0.5;               // world-to-screen scale (sprites for king/locusts/UI stay full size)
 
 // ---- Pair ---------------------------------------------------------------
 class Pair {
@@ -64,10 +65,11 @@ class Tile {
   }
   draw(ctx, center) {
     const cx = this.position.x * TILE, cy = this.position.y * TILE;
-    if (cx < center.x - WIDTH / 2 - TILE || cx > center.x + WIDTH / 2 + TILE) return;
-    if (cy < center.y - HEIGHT / 2 - TILE || cy > center.y + HEIGHT / 2 + TILE) return;
+    if (cx < center.x - WIDTH / 2 / ZOOM - TILE || cx > center.x + WIDTH / 2 / ZOOM + TILE) return;
+    if (cy < center.y - HEIGHT / 2 / ZOOM - TILE || cy > center.y + HEIGHT / 2 / ZOOM + TILE) return;
     const d = World.toDisplayCoords(new Pair(cx, cy), center);
-    ctx.drawImage(sprites[this.sprite], Math.floor(d.x), Math.floor(d.y));
+    const s = Math.ceil(TILE * ZOOM) + 1;   // +1 hides seams
+    ctx.drawImage(sprites[this.sprite], Math.floor(d.x), Math.floor(d.y), s, s);
   }
 }
 class MountainTile extends Tile {
@@ -259,7 +261,7 @@ class World {
     if (this.numBoids === 0) this.game.lose();
   }
   static toDisplayCoords(c, center) {
-    return new Pair(c.x - (center.x - WIDTH / 2), c.y - (center.y - HEIGHT / 2));
+    return new Pair(WIDTH / 2 + (c.x - center.x) * ZOOM, HEIGHT / 2 + (c.y - center.y) * ZOOM);
   }
 }
 
