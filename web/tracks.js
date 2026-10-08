@@ -1,0 +1,17 @@
+const TRACKS = [
+  {file: "web/music/01.mp3", name: "BesideZion - Calcifer"},
+  {file: "web/music/02.mp3", name: "GenaMusic - Hope"},
+  {file: "web/music/03.mp3", name: "Kupla X j'san - Out of Town"},
+  {file: "web/music/04.mp3", name: "Kupla x j'san - Silver Lining"},
+  {file: "web/music/05.mp3", name: "Kylechriss - Rainy Night"},
+  {file: "web/music/06.mp3", name: "Mockfly - i don't know what else to say"},
+  {file: "web/music/07.mp3", name: "Pebelone - We'll Be Okay"},
+  {file: "web/music/08.mp3", name: "ihaveaface - post-it notes"},
+  {file: "web/music/09.mp3", name: "kanisan - under moonlight (ft. mondo loops)"},
+  {file: "web/music/10.mp3", name: "kowkaine - despite my feelings"},
+  {file: "web/music/11.mp3", name: "kyodai - joy"},
+  {file: "web/music/12.mp3", name: "mommy x Philanthrope - Embrace"},
+  {file: "web/music/13.mp3", name: "slowheal - Calm Down"},
+  {file: "web/music/14.mp3", name: "swtvlly - waiting for my ride pt. 2"},
+  {file: "web/music/15.mp3", name: "under the maple tree - flying away"},
+];

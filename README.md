@@ -2,6 +2,8 @@
 
 <img src="demo/20201220_152646.gif" width="75%">
 
+**[Play it in your browser](https://ethanlebowitz.github.io/LocustKing/)** (web port in `index.html` + `web/`; the original Java version is below).
+
 ### About ###
 
 Creators: Eva Lau @evamlau, Ethan Lebowitz @EthanLebowitz, Karina Thanawala @kthanawala21
